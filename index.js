@@ -1,13 +1,19 @@
+const express = require('express');
+const app = express();
+const fs = require('fs');
+
 const Genius = require('./services/genius');
 const Scraper = require('./services/scrapper');
 
-const run = async () => {
-    const songs = await Genius.getSongsByArtist('Freeze Corleone');
-    songs.map(async song => {
+app.get('/artist/:artistName', async (req, res) => {
+    const {artistName} = req.params;
+    const songs = await Genius.getSongsByArtist(artistName);
+    Promise.all(songs.map(async song => {
+        const title = song.result.full_title;
         const lyrics = await Scraper.scrapLyricsBySongURL(song.result.url);
-        console.log(song.result.full_title);
-        console.log(lyrics);
-    });
-};
+        await fs.writeFile(`./out/${title}.txt`, lyrics, () => {return null});
+        return {title, lyrics};
+    })).then(songsLyrics => res.send(songsLyrics).status(200));
+});
 
-run();
+app.listen(3000, () => {console.log('Server running on port 3000')});
