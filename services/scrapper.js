@@ -1,8 +1,14 @@
-const {JSDOM} = require('jsdom');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const scrapLyricsBySongURL = songURL => {
-    return JSDOM.fromURL(songURL)
-        .then(dom => dom.window.document.querySelector('p').textContent)
+    console.log("SPAM");
+    return axios.get(songURL)
+        .then(async result => {
+            const $ = await cheerio.load(result.data);
+            const lyrics = $('.lyrics p').text();
+            return lyrics.length > 0 ? lyrics : scrapLyricsBySongURL(songURL);
+        })
         .catch(error => console.log(error));
 };
 
